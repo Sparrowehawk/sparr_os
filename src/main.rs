@@ -5,27 +5,51 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
-use sparr_os::println;
+use sparr_os::{memory::{self}, println};
+use bootloader::{BootInfo, entry_point};
+use x86_64::structures::paging::Translate;
 
+entry_point!(kernal_main);
 
-#[unsafe(no_mangle)] // don't mangle the name of this function
-pub extern "C" fn _start() -> ! {
+fn kernal_main(boot_info: &'static BootInfo) -> !{
+    use x86_64::VirtAddr;
+
     println!("Hello World {}", "!");
-
     sparr_os::init();
 
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mapper = unsafe {memory::init(phys_mem_offset)};
+
+    let addresses = [
+        // The identity-mapped VGA buffer page
+        0xb8000,
+        // Some code page
+        0x201008,
+        // Some stack page
+        0x0100_0020_1a10,
+        // virtual addres mapped to physical address 0
+        boot_info.physical_memory_offset,
+    ];
+
+    for &address in &addresses {
+        let virt = VirtAddr::new(address);
+        let phys = mapper.translate_addr(virt);
+        println!("{virt:?} -> {phys:?}");
+    }
+
+    
     #[cfg(test)]
     test_main();
 
     println!("DID NOT CRASH !!");
-    loop {}
+    sparr_os::hlt_loop();
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     println!("{}", _info);
-    loop {}
+    sparr_os::hlt_loop();
 }
 
 #[cfg(test)]

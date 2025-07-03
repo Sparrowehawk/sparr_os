@@ -11,6 +11,7 @@ pub mod vga_buffer;
 pub mod serial;
 pub mod interrupts;
 pub mod gdt;
+pub mod memory;
 pub trait Testable {
     fn run(&self) -> ();
 }
@@ -39,18 +40,22 @@ pub fn test_panic_handler(_info: &PanicInfo) -> ! {
     serial_println!("[failed]");
     serial_println!("Error :{}", _info);
     exit_qemu(QemuExitCode::Failed);
-    loop {}
+    hlt_loop();
 }
+
+#[cfg(test)]
+use bootloader::{entry_point, BootInfo};
+
+#[cfg(test)]
+entry_point!(test_kernal_main);
 
 /// Entry point for `cargo test`
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+fn test_kernal_main(_boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
-    loop {}
+    hlt_loop();
 }
-
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -84,4 +89,10 @@ pub fn init() {
     interrupts::init_idt();
     unsafe { interrupts::PICS.lock().initialize()};
     x86_64::instructions::interrupts::enable();
+}
+
+pub fn hlt_loop() -> !{
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
