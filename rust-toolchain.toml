@@ -1,4 +1,3 @@
 [toolchain]
-channel = "nightly-2025-06-26" #broken version
-channel = "nightly-2025-06-24" #working version
+channel = "nightly-2025-06-24"
 components = ["rust-src"]
