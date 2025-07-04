@@ -16,7 +16,7 @@ pub extern "C" fn _start() -> ! {
     should_fail();
     serial_println!("[test did not fail]");
     exit_qemu(QemuExitCode::Failed);
-    loop {}
+    sparr_os::hlt_loop();
 }
 
 fn should_fail(){
