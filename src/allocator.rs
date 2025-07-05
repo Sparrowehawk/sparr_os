@@ -1,15 +1,12 @@
 use x86_64::{structures::paging::{
     mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB
 }, VirtAddr};
-use linked_list_allocator::LockedHeap;
-pub mod bump;
-use bump::BumpAllocator;
+
+pub mod fixed_size_block;
+use fixed_size_block::FixedSizeBlockAllocator;
 
 #[global_allocator]
-static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
-
-// #[global_allocator]
-// static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new());
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; //100 KB
@@ -54,12 +51,12 @@ impl<A> Locked<A>{
         }
     }
 
-    pub fn lock(&self) -> spin::MutexGuard<A>{
+    pub fn lock(&'_ self) -> spin::MutexGuard<'_, A>{
         self.inner.lock()
     }
 
 }
 
-fn align_up (addr:usize, align:usize) -> usize {
-    (addr + align - 1) & !(align-1)
-}
+// fn align_up (addr:usize, align:usize) -> usize {
+//     (addr + align - 1) & !(align-1)
+// }
