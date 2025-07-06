@@ -1,7 +1,6 @@
+use super::{Locked, align_up};
 use alloc::alloc::{GlobalAlloc, Layout};
-use super::{align_up, Locked};
 use core::ptr;
-
 
 pub struct BumpAllocator {
     heap_start: usize,
@@ -9,7 +8,6 @@ pub struct BumpAllocator {
     next: usize,
     allocations: usize,
 }
-
 
 impl Default for BumpAllocator {
     fn default() -> Self {
@@ -34,24 +32,24 @@ impl BumpAllocator {
     ///
     /// The caller must ensure that the memory region starting at `heap_start` and
     /// spanning `heap_size` bytes is valid and not aliased for the lifetime of the allocator.
-    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize){
+    pub unsafe fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.heap_start = heap_start;
         self.heap_end = heap_start + heap_size;
         self.next = heap_start;
     }
 }
 
-unsafe impl GlobalAlloc for Locked<BumpAllocator>{
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8{
+unsafe impl GlobalAlloc for Locked<BumpAllocator> {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut bump = self.lock();
 
         let alloc_start = align_up(bump.next, layout.align());
-        let alloc_end = match alloc_start.checked_add(layout.size()){
+        let alloc_end = match alloc_start.checked_add(layout.size()) {
             Some(end) => end,
             None => return ptr::null_mut(),
         };
 
-        if alloc_end > bump.heap_end{
+        if alloc_end > bump.heap_end {
             ptr::null_mut()
         } else {
             bump.next = alloc_end;
@@ -60,11 +58,11 @@ unsafe impl GlobalAlloc for Locked<BumpAllocator>{
         }
     }
 
-    unsafe fn dealloc(&self, _ptr:*mut u8, _layout:Layout){
+    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
         let mut bump = self.lock();
 
         bump.allocations -= 1;
-        if bump.allocations == 0{
+        if bump.allocations == 0 {
             bump.next = bump.heap_start;
         }
     }

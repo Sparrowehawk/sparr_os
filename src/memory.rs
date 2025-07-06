@@ -1,10 +1,10 @@
+use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 use x86_64::{
     PhysAddr, VirtAddr,
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PhysFrame, Size4KiB,
     },
 };
-use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
 
 /// Initializes a new OffsetPageTable using the provided physical memory offset.
 ///
@@ -64,12 +64,12 @@ pub fn create_example_mapping(
 //     }
 // }
 
-pub struct BootInfoFrameAllocator{
+pub struct BootInfoFrameAllocator {
     memory_map: &'static MemoryMap,
     next: usize,
 }
 
-impl BootInfoFrameAllocator{
+impl BootInfoFrameAllocator {
     /// Initializes a new BootInfoFrameAllocator using the provided memory map.
     ///
     /// # Safety
@@ -77,22 +77,23 @@ impl BootInfoFrameAllocator{
     /// The caller must ensure that the provided `memory_map` reference is valid for the lifetime of the allocator,
     /// and that it accurately represents the system's memory map. Improper use may lead to undefined behavior.
     pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
-        BootInfoFrameAllocator { memory_map, next: 0 }
+        BootInfoFrameAllocator {
+            memory_map,
+            next: 0,
+        }
     }
 
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
-        // Get usable regions 
+        // Get usable regions
         let regions = self.memory_map.iter();
-        let usable_regions = regions
-            .filter(|r| r.region_type ==MemoryRegionType::Usable);
+        let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
 
         // map each region to its addr range
-        let addr_ranges = usable_regions
-            .map(|r| r.range.start_addr()..r.range.end_addr());
+        let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
 
         // Transform to an iterator from the start addr
         let frame_addresses = addr_ranges.flat_map(|r| r.step_by(4096));
-        frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr))) 
+        frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
     }
 }
 

@@ -4,8 +4,8 @@
 
 use core::panic::PanicInfo;
 use lazy_static::lazy_static;
+use sparr_os::{QemuExitCode, exit_qemu, serial_println};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use sparr_os::{exit_qemu, serial_println, QemuExitCode};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
@@ -42,7 +42,7 @@ lazy_static! {
     };
 }
 
-pub fn init_test_idt(){
+pub fn init_test_idt() {
     TEST_IDT.load();
 }
 

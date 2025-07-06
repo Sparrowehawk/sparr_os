@@ -6,27 +6,24 @@
 
 extern crate alloc;
 
-use bootloader::{entry_point, BootInfo};
-use sparr_os::allocator::HEAP_SIZE;
-use core::panic::PanicInfo;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use bootloader::{BootInfo, entry_point};
+use core::panic::PanicInfo;
+use sparr_os::allocator::HEAP_SIZE;
 
 entry_point!(main);
 
-fn main(boot_info: &'static BootInfo) -> !{
+fn main(boot_info: &'static BootInfo) -> ! {
     use sparr_os::allocator;
     use sparr_os::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
     sparr_os::init();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    let mut mapper = unsafe { memory::init(phys_mem_offset)};
-    let mut frame_allocator = unsafe {
-        BootInfoFrameAllocator::init(&boot_info.memory_map)
-    };
-    allocator::init_heap(&mut mapper, &mut frame_allocator)
-        .expect("heap initialization failed");
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
     test_main();
     sparr_os::hlt_loop();
@@ -49,15 +46,15 @@ fn simple_allocation() {
 fn large_vec() {
     let n = 1000;
     let mut vec = Vec::new();
-    for i in 0..n{
+    for i in 0..n {
         vec.push(i);
     }
-    assert_eq!(vec.iter().sum::<u64>(), (n-1)*n / 2); //nth partial sum comparitive 
+    assert_eq!(vec.iter().sum::<u64>(), (n - 1) * n / 2); //nth partial sum comparitive 
 }
 
 #[test_case]
 fn many_boxes() {
-    for i in 0..HEAP_SIZE{
+    for i in 0..HEAP_SIZE {
         let x = Box::new(i);
         assert_eq!(*x, i);
     }
@@ -66,7 +63,7 @@ fn many_boxes() {
 #[test_case]
 fn many_boxes_long_lived() {
     let long_lived = Box::new(1);
-    for i in 0..HEAP_SIZE{
+    for i in 0..HEAP_SIZE {
         let x = Box::new(i);
         assert_eq!(*x, i);
     }

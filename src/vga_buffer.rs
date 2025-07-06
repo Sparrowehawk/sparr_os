@@ -1,14 +1,12 @@
 use lazy_static::lazy_static;
-use volatile::Volatile;
 use spin::Mutex;
+use volatile::Volatile;
 
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_pos: 0,
         colour_code: ColourCode::new(Colour::Cyan, Colour::Black),
-        buffer: unsafe {
-            &mut *(0xb8000 as *mut Buffer)
-        },
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
 }
 
@@ -24,12 +22,12 @@ macro_rules! println {
 }
 
 #[doc(hidden)]
-pub fn _print(args: fmt::Arguments){
+pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    use x86_64::instructions::interrupts; 
+    use x86_64::instructions::interrupts;
 
-    interrupts::without_interrupts(||{
-       WRITER.lock().write_fmt(args).unwrap();
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
     });
 }
 
@@ -89,18 +87,18 @@ struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-pub struct Writer{
+pub struct Writer {
     column_pos: usize,
     colour_code: ColourCode,
     buffer: &'static mut Buffer,
 }
 
 impl Writer {
-    pub fn write_byte(&mut self, byte: u8){
+    pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
             byte => {
-                if self.column_pos >= BUFFER_WIDTH{
+                if self.column_pos >= BUFFER_WIDTH {
                     self.new_line();
                 }
                 let row = BUFFER_HEIGHT - 1;
@@ -116,39 +114,38 @@ impl Writer {
         }
     }
 
-    pub fn write_string(&mut self, s : &str){
+    pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
                 // Printable byte or new line
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
-                _ => self.write_byte(0xfe),                     // Thorn for error
+                _ => self.write_byte(0xfe), // Thorn for error
             }
         }
     }
 
     fn new_line(&mut self) {
-        for row in 1..BUFFER_HEIGHT{
-            for col in 0..BUFFER_WIDTH{
+        for row in 1..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
                 let character = self.buffer.chars[row][col].read();
-                self.buffer.chars[row-1][col].write(character);
+                self.buffer.chars[row - 1][col].write(character);
             }
         }
-        self.clear_row(BUFFER_HEIGHT-1);
+        self.clear_row(BUFFER_HEIGHT - 1);
         self.column_pos = 0;
     }
 
-    fn clear_row(&mut self, row:usize) {
+    fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
             colour_code: self.colour_code,
         };
 
-        for col in 0..BUFFER_WIDTH{
+        for col in 0..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
         }
     }
 }
-
 
 #[test_case]
 fn test_println_simple() {
@@ -164,8 +161,8 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
-    use x86_64::instructions::interrupts;
     use core::fmt::Write;
+    use x86_64::instructions::interrupts;
 
     let s = "Some test string that fits on a single line";
     interrupts::without_interrupts(|| {

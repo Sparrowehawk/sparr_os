@@ -4,7 +4,6 @@
 #![reexport_test_harness_main = "test_main"]
 #![test_runner(sparr_os::test_runner)]
 
-
 use core::panic::PanicInfo;
 
 #[unsafe(no_mangle)] // don't mangle the name of this function
