@@ -7,11 +7,11 @@
 
 use core::panic::PanicInfo;
 
-pub mod gdt;
-pub mod interrupts;
-pub mod memory;
-pub mod serial;
 pub mod vga_buffer;
+pub mod serial;
+pub mod interrupts;
+pub mod gdt;
+pub mod memory;
 extern crate alloc;
 pub mod allocator;
 pub mod task;
@@ -19,11 +19,11 @@ pub trait Testable {
     fn run(&self) -> ();
 }
 
-impl<T> Testable for T
+impl <T>Testable for T
 where
     T: Fn(),
 {
-    fn run(&self) {
+    fn run(&self){
         serial_print!("{}...\t", core::any::type_name::<T>());
         self();
         serial_println!("[ok]");
@@ -38,6 +38,7 @@ pub fn test_runner(tests: &[&dyn Testable]) {
     exit_qemu(QemuExitCode::Success);
 }
 
+
 pub fn test_panic_handler(_info: &PanicInfo) -> ! {
     serial_println!("[failed]");
     serial_println!("Error :{}", _info);
@@ -46,7 +47,7 @@ pub fn test_panic_handler(_info: &PanicInfo) -> ! {
 }
 
 #[cfg(test)]
-use bootloader::{BootInfo, entry_point};
+use bootloader::{entry_point, BootInfo};
 
 #[cfg(test)]
 entry_point!(test_kernal_main);
@@ -65,9 +66,10 @@ fn panic(info: &PanicInfo) -> ! {
 }
 
 #[test_case]
-fn trivial_assertion() {
+fn trivial_assertion(){
     assert_ne!(0, 1);
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -88,11 +90,11 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
-    unsafe { interrupts::PICS.lock().initialize() };
+    unsafe { interrupts::PICS.lock().initialize()};
     x86_64::instructions::interrupts::enable();
 }
 
-pub fn hlt_loop() -> ! {
+pub fn hlt_loop() -> !{
     loop {
         x86_64::instructions::hlt();
     }

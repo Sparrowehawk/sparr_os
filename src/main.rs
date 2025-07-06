@@ -7,10 +7,11 @@
 extern crate alloc;
 
 use bootloader::{BootInfo, entry_point};
+use sparr_os::task::executor::Executor;
 use core::panic::PanicInfo;
-use sparr_os::{allocator, println};
+use sparr_os::{allocator, println, task::keyboard};
 
-use sparr_os::task::{Task, simple_executor::SimpleExecutor};
+use sparr_os::task::Task;
 
 entry_point!(kernal_main);
 
@@ -26,12 +27,13 @@ fn kernal_main(boot_info: &'static BootInfo) -> ! {
     let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed"); // I hate american spelling
 
-    let mut executor = SimpleExecutor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.run();
-
     #[cfg(test)]
     test_main();
+
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
 
     println!("It did not crash!");
     sparr_os::hlt_loop();
